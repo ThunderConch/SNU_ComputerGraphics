@@ -1,14 +1,14 @@
 import pyglet
 from pyglet import window, app, shapes
-from pyglet.window import mouse,key
+from pyglet.window import mouse, key
 from pyglet.math import Mat4, Vec3
-
 
 
 class Control:
     """
     Control class controls keyboard & mouse inputs.
     """
+
     def __init__(self, window):
         window.on_key_press = self.on_key_press
         window.on_key_release = self.on_key_release
@@ -27,16 +27,24 @@ class Control:
         pass
 
     def on_key_press(self, symbol, modifier):
-        # TODO:
-        pass
-    
+        if symbol == pyglet.window.key.LEFT:
+            self.window.rotate_y = -1
+        elif symbol == pyglet.window.key.RIGHT:
+            self.window.rotate_y = 1
+        elif symbol == pyglet.window.key.UP:
+            self.window.rotate_x = -1
+        elif symbol == pyglet.window.key.DOWN:
+            self.window.rotate_x = 1
+
     def on_key_release(self, symbol, modifier):
         if symbol == pyglet.window.key.ESCAPE:
             pyglet.app.exit()
         elif symbol == pyglet.window.key.SPACE:
-            self.window.animate = not self.window.animate
-        # TODO:
-        pass
+            self.window.wireframe = not self.window.wireframe
+        elif symbol == pyglet.window.key.LEFT or symbol == pyglet.window.key.RIGHT:
+            self.window.rotate_y = 0
+        elif symbol == pyglet.window.key.UP or symbol == pyglet.window.key.DOWN:
+            self.window.rotate_x = 0
 
     def on_mouse_motion(self, x, y, dx, dy):
         # TODO:

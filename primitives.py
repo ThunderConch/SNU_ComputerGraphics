@@ -6,19 +6,34 @@ from pyglet.gl import *
 
 import shader
 
+DEFAULT = 0
+NON_TEXTURED = 1
+TEXTURED = 2
+
+
 class CustomGroup(pyglet.graphics.Group):
     '''
     To draw multiple 3D shapes in Pyglet, you should make a group for an object.
     '''
-    def __init__(self, transform_mat: Mat4, order):
+
+    def __init__(self, transform_mat: Mat4, order, mode=TEXTURED):
         super().__init__(order)
 
         '''
         Create shader program for each shape
         '''
-        self.shader_program = shader.create_program(
-            shader.vertex_source_default, shader.fragment_source_default
-        )
+        if mode == TEXTURED:
+            self.shader_program = shader.create_program(
+                shader.vertex_source_texture, shader.fragment_source_texture
+            )
+        elif mode == NON_TEXTURED:
+            self.shader_program = shader.create_program(
+                shader.vertex_source_no_texture, shader.fragment_source_no_texture
+            )
+        else:
+            self.shader_program = shader.create_program(
+                shader.vertex_source_default, shader.fragment_source_default
+            )
 
         self.transform_mat = transform_mat
         self.indexed_vertices_list = None
@@ -36,47 +51,74 @@ class CustomGroup(pyglet.graphics.Group):
         return (self.__class__ is other.__class__ and
                 self.order == other.order and
                 self.parent == other.parent)
-    
+
     def __hash__(self):
-        return hash((self.order)) 
-    
+        return hash((self.order))
+
+
+class Line:
+    def __init__(self, fr, to):
+        dt = .05
+        self.vertices = [
+            fr[0] + dt, fr[1] + dt, fr[2] + dt,
+            fr[0], fr[1], fr[2],
+            fr[0] - dt, fr[1] - dt, fr[2] - dt,
+            to[0] + dt, to[1] + dt, to[2] + dt,
+            to[0], to[1], to[2],
+            to[0] - dt, to[1] - dt, to[2] - dt
+        ]
+
+        self.indices = [
+            0, 1, 3, 1, 4, 3,
+            1, 2, 4, 2, 5, 4,
+            2, 0, 5, 0, 3, 5,
+            3, 4, 1, 3, 1, 0,
+            4, 5, 2, 4, 2, 1,
+            5, 3, 0, 5, 0, 2
+        ]
+
+        self.colors = (0., 0., 1., 1.,) * 6
+
 
 class Cube:
     '''
     default structure of cube
     '''
+
     def __init__(self, scale=1.0):
         self.vertices = [-0.5, -0.5, 0.5,
-            0.5, -0.5, 0.5,
-            0.5, 0.5, 0.5,
-            -0.5, 0.5, 0.5,
-            -0.5, -0.5, -0.5,
-            0.5, -0.5, -0.5,
-            0.5,0.5,-0.5,
-            -0.5,0.5,-0.5]
-        self.vertices = [scale[idx%3] * x for idx, x in enumerate(self.vertices)]
-    
+                         0.5, -0.5, 0.5,
+                         0.5, 0.5, 0.5,
+                         -0.5, 0.5, 0.5,
+                         -0.5, -0.5, -0.5,
+                         0.5, -0.5, -0.5,
+                         0.5, 0.5, -0.5,
+                         -0.5, 0.5, -0.5]
+        self.vertices = [scale[idx % 3] * x for idx, x in enumerate(self.vertices)]
+
         self.indices = [0, 1, 2, 2, 3, 0,
-                    4, 7, 6, 6, 5, 4,
-                    4, 5, 1, 1, 0, 4,
-                    6, 7, 3, 3, 2, 6,
-                    5, 6, 2, 2, 1, 5,
-                    7, 4, 0, 0, 3, 7]
-    
-        self.colors = (255, 0,  0,255,
-                0, 255,  0,255,
-                0,   0,255,255,
-                255,255,255,255,
-                
-                255, 0,  0,255,
-                0, 255,  0,255,
-                0,   0,255,255,
-                255,255,255,255)
-        
+                        4, 7, 6, 6, 5, 4,
+                        4, 5, 1, 1, 0, 4,
+                        6, 7, 3, 3, 2, 6,
+                        5, 6, 2, 2, 1, 5,
+                        7, 4, 0, 0, 3, 7]
+
+        self.colors = (255, 0, 0, 255,
+                       0, 255, 0, 255,
+                       0, 0, 255, 255,
+                       255, 255, 255, 255,
+
+                       255, 0, 0, 255,
+                       0, 255, 0, 255,
+                       0, 0, 255, 255,
+                       255, 255, 255, 255)
+
+
 class Sphere:
     '''
     default structure of sphere
     '''
+
     def __init__(self, stacks, slices, scale=1.0):
         num_triangles = 2 * slices * (stacks - 1)
 
@@ -132,11 +174,14 @@ class Sphere:
                     self.vertices.append(x2)
                     self.vertices.append(y2)
                     self.vertices.append(z2)
-                    
-                    self.colors += (int(math.cos(phi0) * 255),int(math.cos(theta0) * 255),int(math.sin(phi0)*255),255)
-                    self.colors += (int(math.cos(phi0) * 255),int(math.cos(theta0) * 255),int(math.sin(phi0)*255),255)
-                    self.colors += (int(math.cos(phi0) * 255),int(math.cos(theta0) * 255),int(math.sin(phi0)*255),255)
-                
+
+                    self.colors += (
+                    int(math.cos(phi0) * 255), int(math.cos(theta0) * 255), int(math.sin(phi0) * 255), 255)
+                    self.colors += (
+                    int(math.cos(phi0) * 255), int(math.cos(theta0) * 255), int(math.sin(phi0) * 255), 255)
+                    self.colors += (
+                    int(math.cos(phi0) * 255), int(math.cos(theta0) * 255), int(math.sin(phi0) * 255), 255)
+
                 if (i != 0):
                     self.vertices.append(x2)
                     self.vertices.append(y2)
@@ -149,10 +194,13 @@ class Sphere:
                     self.vertices.append(x0)
                     self.vertices.append(y0)
                     self.vertices.append(z0)
-                    
-                    self.colors += (int(math.cos(phi0) * 255),int(math.cos(theta0) * 255),int(math.sin(phi0)*255),255)
-                    self.colors += (int(math.cos(phi0) * 255),int(math.cos(theta0) * 255),int(math.sin(phi0)*255),255)
-                    self.colors += (int(math.cos(phi0) * 255),int(math.cos(theta0) * 255),int(math.sin(phi0)*255),255)
 
-        for i in range(num_triangles*3):
+                    self.colors += (
+                    int(math.cos(phi0) * 255), int(math.cos(theta0) * 255), int(math.sin(phi0) * 255), 255)
+                    self.colors += (
+                    int(math.cos(phi0) * 255), int(math.cos(theta0) * 255), int(math.sin(phi0) * 255), 255)
+                    self.colors += (
+                    int(math.cos(phi0) * 255), int(math.cos(theta0) * 255), int(math.sin(phi0) * 255), 255)
+
+        for i in range(num_triangles * 3):
             self.indices.append(i)
