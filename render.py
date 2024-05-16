@@ -10,6 +10,7 @@ from pyglet.gl import *
 import shader
 from primitives import CustomGroup, Line, PHONG_TEX, PHONG_NO_TEX, DEFAULT
 from model.obj import parse_obj_file
+from texture import ambient_tex, diffuse_tex, specular_tex, roughness_tex
 
 wht = (1.0, 1., 1., 1.0)
 
@@ -43,6 +44,8 @@ class RenderWindow(pyglet.window.Window):
 
         self.light_src = Vec3(100, 100, 100)
         self.setup()
+
+        self.using_texture = False
 
         self.wireframe = False
         self.rotate_y = 0
@@ -82,14 +85,13 @@ class RenderWindow(pyglet.window.Window):
         for i, shape in enumerate(self.shapes + self.shapes2):
             shape.transform_mat = Mat4.from_rotation(self.rotate_y * dt, Vec3(0, 1, 0)) @ shape.transform_mat
             shape.transform_mat = Mat4.from_rotation(self.rotate_x * dt, Vec3(1, 0, 0)) @ shape.transform_mat
+
             shape.shader_program['view'] = self.view_mat
             shape.shader_program['projection'] = self.proj_mat
+
             if i < len(self.shapes):
                 shape.shader_program['camera_position'] = self.cam_eye
                 shape.shader_program['light_position'] = self.light_src
-
-                shape.shader_program['light_intensity'] = 1000.0
-                shape.shader_program['ambient_intensity'] = 1.0
 
     def on_resize(self, width, height):
         glViewport(0, 0, *self.get_framebuffer_size())
@@ -113,7 +115,6 @@ class RenderWindow(pyglet.window.Window):
 
     def add_shape_from_obj(self, file_name, shader=PHONG_TEX):
         mesh = parse_obj_file(file_name)
-
         shape = CustomGroup(Mat4(), len(self.shapes), shader)
         count = len(mesh.vertices) // 3
         shape.indexed_vertices_list = shape.shader_program.vertex_list(
@@ -134,9 +135,26 @@ class RenderWindow(pyglet.window.Window):
             colors=('f', wht * count),
         )
 
+        shape.shader_program['light_intensity'] = 1000.0
+        shape.shader_program['ambient_intensity'] = 0.1
+        if shader == PHONG_TEX:
+            shape.shader_program['ambient_map'] = ambient_tex.id
+            shape.shader_program['diffuse_map'] = diffuse_tex.id
+            shape.shader_program['specular_map'] = specular_tex.id
+            shape.shader_program['roughness_map'] = roughness_tex.id
+
+            glActiveTexture(GL_TEXTURE0+ambient_tex.id)
+            glBindTexture(ambient_tex.target, ambient_tex.id)
+            glActiveTexture(GL_TEXTURE0+diffuse_tex.id)
+            glBindTexture(diffuse_tex.target, diffuse_tex.id)
+            glActiveTexture(GL_TEXTURE0+specular_tex.id)
+            glBindTexture(specular_tex.target, specular_tex.id)
+            glActiveTexture(GL_TEXTURE0+roughness_tex.id)
+            glBindTexture(roughness_tex.target, roughness_tex.id)
+
         self.shapes.append(shape)
 
-        it = iter(mesh.vertices)
+        '''it = iter(mesh.vertices)
         for x1, y1, z1, x2, y2, z2, x3, y3, z3 in zip(it, it, it, it, it, it, it, it, it):
             a = Vec3(x1, y1, z1)
             b = Vec3(x2, y2, z2)
@@ -147,7 +165,7 @@ class RenderWindow(pyglet.window.Window):
             l3 = Line(c, a)
             self.add_shape(Mat4(), l1.vertices, l1.indices, l1.colors)
             self.add_shape(Mat4(), l2.vertices, l2.indices, l2.colors)
-            self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)
+            self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)'''
 
     def run(self):
         #pyglet.gl.glClearColor(1, 1, 1, 1)

@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # Keyboard/Mouse control. Not implemented yet.
     controller = Control(renderer)
 
-    renderer.add_shape_from_obj('model/Free_rock/Free_rock.obj', shader=GOURAUD_NO_TEX)
+    renderer.add_shape_from_obj('model/Free_rock/Free_rock.obj', shader=PHONG_TEX)
 
     #draw shapes
     renderer.run()

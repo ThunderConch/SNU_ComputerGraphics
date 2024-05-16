@@ -87,7 +87,7 @@ void main()
     vec3 diffuse = diffuse_strength * light_intensity * d2_inv * vertex_colors.rgb * max(dot(n, l), 0.0);
     
     float specular_strength = 0.8;
-    vec3 specular = specular_strength * light_intensity * d2_inv * vertex_colors.rgb * pow(max(dot(r, v), 0.0), 4.0);
+    vec3 specular = specular_strength * light_intensity * d2_inv * vertex_colors.rgb * pow(dot(r, v), 4.0);
 
     final_colors = vec4(ambient + diffuse + specular, 1.0);
 }
@@ -132,7 +132,7 @@ void main()
     vec3 diffuse = diffuse_strength * light_intensity * d2_inv * colors.rgb * max(dot(n, l), 0.0);
     
     float specular_strength = 0.8;
-    vec3 specular = specular_strength * light_intensity * d2_inv * colors.rgb * pow(max(dot(r, v), 0.0), 4.0);
+    vec3 specular = specular_strength * light_intensity * d2_inv * colors.rgb * pow(dot(r, v), 4.0);
     
     vertex_colors = vec4(ambient + diffuse + specular, 1.0);
 }   
@@ -174,21 +174,41 @@ void main()
 }
 """
 fragment_source_texture = """#version 330 core
-in vec4 vertex_colors;
 in vec3 vertex_normals;
 in vec2 texture_coords;
 in vec3 vertex_position;
 out vec4 final_colors;
 
+uniform vec3 light_position;
+uniform vec3 camera_position;
+
 uniform float ambient_intensity;
 uniform float light_intensity;
 
-uniform sampler2D our_texture;
+uniform sampler2D ambient_map;
+uniform sampler2D diffuse_map;
+uniform sampler2D specular_map;
+uniform sampler2D roughness_map;
 
 void main()
 {
-    float l = dot(normalize(-vertex_position), normalize(vertex_normals));
-    final_colors = (texture(our_texture, texture_coords) * vertex_colors) * l * 1.2;
+    vec3 l = normalize(light_position - vertex_position);
+    vec3 v = camera_position - vertex_position;
+    float d2_inv = 1/(length(v)*length(v));
+    v = normalize(v);
+
+    vec3 n = normalize(vertex_normals);
+    vec3 r = normalize(reflect(-l, n));
+
+    vec3 ambient = texture(ambient_map, texture_coords).xyz * ambient_intensity;
+
+    vec3 diffuse = texture(diffuse_map, texture_coords).xyz * light_intensity * d2_inv * max(dot(n, l), 0.0);
+
+    vec3 roughness = texture(roughness_map, texture_coords).xyz;
+    vec3 shininess = 1.0 / (1*roughness + .0);
+    vec3 specular = light_intensity * d2_inv * texture(specular_map, texture_coords).xyz * pow(vec3(dot(r, v)), shininess);
+
+    final_colors = vec4(ambient + diffuse + specular, 1.0);
 }
 """
 
