@@ -15,6 +15,7 @@ ambient_tex = load_texture('model/Free_rock/Free_rock_tex/Free_rock_Mixed_AO.jpg
 diffuse_tex = load_texture('model/Free_rock/Free_rock_tex/Free_rock_Base_Color.jpg')
 specular_tex = load_texture('model/Free_rock/Free_rock_tex/Free_rock_Specular.jpg')
 roughness_tex = load_texture('model/Free_rock/Free_rock_tex/Free_rock_Roughness.jpg')
+normal_tex = load_texture('model/Free_rock/Free_rock_tex/Free_rock_Normal_OpenGL.jpg')
 
 
 

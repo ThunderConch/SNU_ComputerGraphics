@@ -32,7 +32,7 @@ void main()
 }
 """
 
-vertex_source_no_texture_phong = """#version 330 core
+vertex_source_phong = """#version 330 core
 in vec3 vertices;
 in vec3 normals;
 in vec4 colors;
@@ -57,7 +57,7 @@ void main()
     vertex_normals = normal_matrix * normals;
 }
 """
-fragment_source_no_texture_phong = """#version 330 core
+fragment_source_phong = """#version 330 core
 in vec4 vertex_colors;
 in vec3 vertex_normals;
 in vec3 vertex_position;
@@ -93,7 +93,7 @@ void main()
 }
 """
 
-vertex_source_no_texture_gouraud = """#version 330 core
+vertex_source_gouraud = """#version 330 core
 in vec3 vertices;
 in vec3 normals;
 in vec4 colors;
@@ -138,7 +138,7 @@ void main()
 }   
 """
 
-fragment_source_no_texture_gouraud = """#version 330 core
+fragment_source_gouraud = """#version 330 core
 in vec4 vertex_colors;
 out vec4 final_colors;
 
@@ -203,6 +203,86 @@ void main()
     vec3 ambient = texture(ambient_map, texture_coords).xyz * ambient_intensity;
 
     vec3 diffuse = texture(diffuse_map, texture_coords).xyz * light_intensity * d2_inv * max(dot(n, l), 0.0);
+
+    vec3 roughness = texture(roughness_map, texture_coords).xyz;
+    vec3 shininess = 1.0 / (1*roughness + .0);
+    vec3 specular = light_intensity * d2_inv * texture(specular_map, texture_coords).xyz * pow(vec3(dot(r, v)), shininess);
+
+    final_colors = vec4(ambient + diffuse + specular, 1.0);
+}
+"""
+
+vertex_source_normal = """#version 330 core
+in vec3 vertices;
+in vec3 normals;
+in vec3 tangents;
+in vec3 bitangents;
+in vec2 tex_coords;
+
+out vec3 vertex_normals;
+out vec3 vertex_tangents;
+out vec3 vertex_bitangents;
+out vec2 texture_coords;
+out vec3 vertex_position;
+
+uniform mat4 projection;
+uniform mat4 view;
+
+uniform mat4 model;
+
+void main()
+{
+    vec4 pos = view * model * vec4(vertices, 1.0);
+    gl_Position = projection * pos;
+    mat3 normal_matrix = transpose(inverse(mat3(model)));
+
+    vertex_position = pos.xyz;
+    texture_coords = tex_coords;
+    vertex_normals = normal_matrix * normals;
+    vertex_tangents = mat3(model) * tangents;
+    vertex_bitangents = mat3(model) * bitangents;
+}
+"""
+fragment_source_normal = """#version 330 core
+in vec3 vertex_normals;
+in vec3 vertex_tangents;
+in vec3 vertex_bitangents;
+in vec2 texture_coords;
+in vec3 vertex_position;
+out vec4 final_colors;
+
+uniform vec3 light_position;
+uniform vec3 camera_position;
+
+uniform float ambient_intensity;
+uniform float light_intensity;
+
+uniform sampler2D ambient_map;
+uniform sampler2D diffuse_map;
+uniform sampler2D specular_map;
+uniform sampler2D roughness_map;
+uniform sampler2D normal_map;
+
+void main()
+{
+    vec3 l = normalize(light_position - vertex_position);
+    vec3 v = camera_position - vertex_position;
+    float d2_inv = 1/(length(v)*length(v));
+    v = normalize(v);
+
+    vec3 t = normalize(vertex_tangents); 
+    vec3 b = normalize(vertex_bitangents);
+    vec3 n = normalize(vertex_normals);
+    mat3 tbn_matrix = mat3(t, b, n);
+    
+    vec3 normal = texture(normal_map, texture_coords).xyz * 2.0 - 1.0;
+    normal = normalize(tbn_matrix * normal);
+    
+    vec3 r = normalize(reflect(-l, normal));
+
+    vec3 ambient = texture(ambient_map, texture_coords).xyz * ambient_intensity;
+
+    vec3 diffuse = texture(diffuse_map, texture_coords).xyz * light_intensity * d2_inv * max(dot(normal, l), 0.0);
 
     vec3 roughness = texture(roughness_map, texture_coords).xyz;
     vec3 shininess = 1.0 / (1*roughness + .0);

@@ -1,5 +1,5 @@
 from render import RenderWindow
-from primitives import PHONG_NO_TEX, PHONG_TEX, GOURAUD_NO_TEX
+from primitives import PHONG, TEX, GOURAUD, NORMAL
 from control import Control
 
 if __name__ == '__main__':
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     # Keyboard/Mouse control. Not implemented yet.
     controller = Control(renderer)
 
-    renderer.add_shape_from_obj('model/Free_rock/Free_rock.obj', shader=PHONG_TEX)
+    renderer.add_shape_from_obj('model/Free_rock/Free_rock.obj', shader=NORMAL)
 
     #draw shapes
     renderer.run()

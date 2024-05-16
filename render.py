@@ -4,13 +4,15 @@ from pyglet.window import mouse, key
 
 from pyglet.graphics.shader import Shader, ShaderProgram
 from pyglet.gl import GL_TRIANGLES, GL_TRIANGLE_FAN
-from pyglet.math import Mat4, Vec3, Vec4
+from pyglet.math import Mat4, Vec3, Vec4, Vec2
 from pyglet.gl import *
 
 import shader
-from primitives import CustomGroup, Line, PHONG_TEX, PHONG_NO_TEX, DEFAULT
+from primitives import CustomGroup, Line, TEX, PHONG, DEFAULT, NORMAL
 from model.obj import parse_obj_file
-from texture import ambient_tex, diffuse_tex, specular_tex, roughness_tex
+from texture import ambient_tex, diffuse_tex, specular_tex, roughness_tex, normal_tex
+
+import numpy as np
 
 wht = (1.0, 1., 1., 1.0)
 
@@ -113,31 +115,86 @@ class RenderWindow(pyglet.window.Window):
                                                                                colors=('f', color))
         self.shapes2.append(shape)
 
-    def add_shape_from_obj(self, file_name, shader=PHONG_TEX):
+    def add_shape_from_obj(self, file_name, shader=TEX):
         mesh = parse_obj_file(file_name)
         shape = CustomGroup(Mat4(), len(self.shapes), shader)
         count = len(mesh.vertices) // 3
-        shape.indexed_vertices_list = shape.shader_program.vertex_list(
-            count,
-            GL_TRIANGLES,
-            batch=self.batch,
-            group=shape,
-            vertices=('f', mesh.vertices),
-            normals=('f', mesh.normals),
-            tex_coords=('f', mesh.tex_coords),
-        ) if shader == PHONG_TEX else shape.shader_program.vertex_list(
-            count,
-            GL_TRIANGLES,
-            batch=self.batch,
-            group=shape,
-            vertices=('f', mesh.vertices),
-            normals=('f', mesh.normals),
-            colors=('f', wht * count),
-        )
 
-        shape.shader_program['light_intensity'] = 1000.0
-        shape.shader_program['ambient_intensity'] = 0.1
-        if shader == PHONG_TEX:
+        if shader == TEX:
+            shape.indexed_vertices_list = shape.shader_program.vertex_list(
+                count,
+                GL_TRIANGLES,
+                batch=self.batch,
+                group=shape,
+                vertices=('f', mesh.vertices),
+                normals=('f', mesh.normals),
+                tex_coords=('f', mesh.tex_coords),
+            )
+        elif shader == NORMAL:
+            tangents = []
+            bitangents = []
+            for i in range(len(mesh.vertices) // 9):
+                p0 = Vec3(*mesh.vertices[i*3:i*3+3])
+                p1 = Vec3(*mesh.vertices[i*3+3:i*3+6])
+                p2 = Vec3(*mesh.vertices[i*3+6:i*3+9])
+
+                u0 = Vec3(*mesh.tex_coords[i*2:i*2+2])
+                u1 = Vec3(*mesh.tex_coords[i*2+2:i*2+4])
+                u2 = Vec3(*mesh.tex_coords[i*2+4:i*2+6])
+
+                for j in range(3):
+                    edge1 = p1 - p0
+                    edge2 = p2 - p0
+                    deltaUV1 = u1 - u0
+                    deltaUV2 = u2 - u0
+
+                    if deltaUV1.x*deltaUV2.y - deltaUV2.x*deltaUV1.y == 0:
+                        tangent = [1.0, 0.0, 0.0]
+                        bitangent = [0.0, 1.0, 0.0]
+                    else:
+                        f = 1.0 / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y)
+                        tangent = [
+                            f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
+                            f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
+                            f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z),
+                        ]
+                        bitangent = [
+                            f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x),
+                            f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y),
+                            f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z),
+                        ]
+
+                    tangents.extend(tangent)
+                    bitangents.extend(bitangent)
+
+                    p0, p1, p2 = p1, p2, p0
+                    u0, u1, u2 = u1, u2, u0
+
+            shape.indexed_vertices_list = shape.shader_program.vertex_list(
+                count,
+                GL_TRIANGLES,
+                batch=self.batch,
+                group=shape,
+                vertices=('f', mesh.vertices),
+                normals=('f', mesh.normals),
+                tangents=('f', tangents),
+                bitangents=('f', bitangents),
+                tex_coords=('f', mesh.tex_coords),
+            )
+        else:
+            shape.shader_program.vertex_list(
+                count,
+                GL_TRIANGLES,
+                batch=self.batch,
+                group=shape,
+                vertices=('f', mesh.vertices),
+                normals=('f', mesh.normals),
+                colors=('f', wht * count),
+            )
+
+        shape.shader_program['light_intensity'] = 2000.0
+        shape.shader_program['ambient_intensity'] = 0.05
+        if shader == TEX or shader == NORMAL:
             shape.shader_program['ambient_map'] = ambient_tex.id
             shape.shader_program['diffuse_map'] = diffuse_tex.id
             shape.shader_program['specular_map'] = specular_tex.id
@@ -152,20 +209,24 @@ class RenderWindow(pyglet.window.Window):
             glActiveTexture(GL_TEXTURE0+roughness_tex.id)
             glBindTexture(roughness_tex.target, roughness_tex.id)
 
+            if shader == NORMAL:
+                shape.shader_program['normal_map'] = normal_tex.id
+                glActiveTexture(GL_TEXTURE0+normal_tex.id)
+                glBindTexture(normal_tex.target, normal_tex.id)
+
         self.shapes.append(shape)
 
-        '''it = iter(mesh.vertices)
-        for x1, y1, z1, x2, y2, z2, x3, y3, z3 in zip(it, it, it, it, it, it, it, it, it):
-            a = Vec3(x1, y1, z1)
-            b = Vec3(x2, y2, z2)
-            c = Vec3(x3, y3, z3)
+        for i in range(len(mesh.vertices) // 3):
+            a = Vec3(*mesh.vertices[i*3:i*3+3])
+            b = Vec3(*mesh.vertices[i*3+3:i*3+6])
+            c = Vec3(*mesh.vertices[i*3+6:i*3+9])
 
             l1 = Line(a, b)
             l2 = Line(b, c)
             l3 = Line(c, a)
             self.add_shape(Mat4(), l1.vertices, l1.indices, l1.colors)
             self.add_shape(Mat4(), l2.vertices, l2.indices, l2.colors)
-            self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)'''
+            self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)
 
     def run(self):
         #pyglet.gl.glClearColor(1, 1, 1, 1)

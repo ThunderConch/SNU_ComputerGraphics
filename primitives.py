@@ -7,9 +7,10 @@ from pyglet.gl import *
 import shader
 
 DEFAULT = 0
-PHONG_NO_TEX = 1
-PHONG_TEX = 2
-GOURAUD_NO_TEX = 3
+PHONG = 1
+GOURAUD = 3
+TEX = 2
+NORMAL = 4
 
 
 class CustomGroup(pyglet.graphics.Group):
@@ -17,23 +18,27 @@ class CustomGroup(pyglet.graphics.Group):
     To draw multiple 3D shapes in Pyglet, you should make a group for an object.
     '''
 
-    def __init__(self, transform_mat: Mat4, order, mode=PHONG_TEX):
+    def __init__(self, transform_mat: Mat4, order, mode=TEX):
         super().__init__(order)
 
         '''
         Create shader program for each shape
         '''
-        if mode == PHONG_TEX:
+        if mode == TEX:
             self.shader_program = shader.create_program(
                 shader.vertex_source_texture, shader.fragment_source_texture
             )
-        elif mode == PHONG_NO_TEX:
+        elif mode == PHONG:
             self.shader_program = shader.create_program(
-                shader.vertex_source_no_texture_phong, shader.fragment_source_no_texture_phong
+                shader.vertex_source_phong, shader.fragment_source_phong
             )
-        elif mode == GOURAUD_NO_TEX:
+        elif mode == GOURAUD:
             self.shader_program = shader.create_program(
-                shader.vertex_source_no_texture_gouraud, shader.fragment_source_no_texture_gouraud
+                shader.vertex_source_gouraud, shader.fragment_source_gouraud
+            )
+        elif mode == NORMAL:
+            self.shader_program = shader.create_program(
+                shader.vertex_source_normal, shader.fragment_source_normal
             )
         else:
             self.shader_program = shader.create_program(
