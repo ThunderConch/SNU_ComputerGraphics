@@ -35,6 +35,14 @@ class Control:
             self.window.rotate_x = -1
         elif symbol == pyglet.window.key.DOWN:
             self.window.rotate_x = 1
+        elif symbol == pyglet.window.key.W:
+            self.window.light_rotate_x = 1
+        elif symbol == pyglet.window.key.S:
+            self.window.light_rotate_x = -1
+        elif symbol == pyglet.window.key.A:
+            self.window.light_rotate_y = -1
+        elif symbol == pyglet.window.key.D:
+            self.window.light_rotate_y = 1
 
     def on_key_release(self, symbol, modifier):
         if symbol == pyglet.window.key.ESCAPE:
@@ -45,6 +53,10 @@ class Control:
             self.window.rotate_y = 0
         elif symbol == pyglet.window.key.UP or symbol == pyglet.window.key.DOWN:
             self.window.rotate_x = 0
+        elif symbol == pyglet.window.key.W or symbol == pyglet.window.key.S:
+            self.window.light_rotate_x = 0
+        elif symbol == pyglet.window.key.A or symbol == pyglet.window.key.D:
+            self.window.light_rotate_y = 0
 
     def on_mouse_motion(self, x, y, dx, dy):
         # TODO:

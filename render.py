@@ -4,14 +4,14 @@ from pyglet.window import mouse, key
 
 from pyglet.graphics.shader import Shader, ShaderProgram
 from pyglet.gl import GL_TRIANGLES, GL_TRIANGLE_FAN
-from pyglet.math import Mat4, Vec3
+from pyglet.math import Mat4, Vec3, Vec4
 from pyglet.gl import *
 
 import shader
-from primitives import CustomGroup, Line, TEXTURED, NON_TEXTURED, DEFAULT
+from primitives import CustomGroup, Line, PHONG_TEX, PHONG_NO_TEX, DEFAULT
 from model.obj import parse_obj_file
 
-red = (1.0, 0., 0., 1.0)
+wht = (1.0, 1., 1., 1.0)
 
 
 class RenderWindow(pyglet.window.Window):
@@ -40,13 +40,16 @@ class RenderWindow(pyglet.window.Window):
 
         self.shapes = []
         self.shapes2 = []
-        self.setup()
 
         self.light_src = Vec3(100, 100, 100)
+        self.setup()
 
         self.wireframe = False
         self.rotate_y = 0
         self.rotate_x = 0
+
+        self.light_rotate_y = 0
+        self.light_rotate_x = 0
 
     def setup(self) -> None:
         self.set_minimum_size(width=400, height=300)
@@ -72,14 +75,21 @@ class RenderWindow(pyglet.window.Window):
             self.batch2.draw()
 
     def update(self, dt) -> None:
+        light_src = Mat4.from_rotation(self.light_rotate_y * dt, Vec3(0, 1, 0)) @ Vec4(self.light_src.x, self.light_src.y, self.light_src.z, 1.)
+        light_src = Mat4.from_rotation(self.light_rotate_x * dt, Vec3(1, 0, 0)) @ light_src
+        self.light_src = light_src.xyz
+
         for i, shape in enumerate(self.shapes + self.shapes2):
             shape.transform_mat = Mat4.from_rotation(self.rotate_y * dt, Vec3(0, 1, 0)) @ shape.transform_mat
             shape.transform_mat = Mat4.from_rotation(self.rotate_x * dt, Vec3(1, 0, 0)) @ shape.transform_mat
             shape.shader_program['view'] = self.view_mat
             shape.shader_program['projection'] = self.proj_mat
             if i < len(self.shapes):
-                shape.shader_program['cam_pos'] = self.cam_eye
-                shape.shader_program['light_src'] = self.light_src
+                shape.shader_program['camera_position'] = self.cam_eye
+                shape.shader_program['light_position'] = self.light_src
+
+                shape.shader_program['light_intensity'] = 1000.0
+                shape.shader_program['ambient_intensity'] = 1.0
 
     def on_resize(self, width, height):
         glViewport(0, 0, *self.get_framebuffer_size())
@@ -92,7 +102,7 @@ class RenderWindow(pyglet.window.Window):
         '''
         Assign a group for each shape
         '''
-        shape = CustomGroup(transform, len(self.shapes), mode=DEFAULT)
+        shape = CustomGroup(transform, len(self.shapes2), mode=DEFAULT)
         shape.indexed_vertices_list = shape.shader_program.vertex_list_indexed(len(vertice) // 3, GL_TRIANGLES,
                                                                                batch=self.batch2,
                                                                                group=shape,
@@ -101,10 +111,10 @@ class RenderWindow(pyglet.window.Window):
                                                                                colors=('f', color))
         self.shapes2.append(shape)
 
-    def add_shape_from_obj(self, file_name, textured=TEXTURED):
+    def add_shape_from_obj(self, file_name, shader=PHONG_TEX):
         mesh = parse_obj_file(file_name)
 
-        shape = CustomGroup(Mat4(), len(self.shapes), textured)
+        shape = CustomGroup(Mat4(), len(self.shapes), shader)
         count = len(mesh.vertices) // 3
         shape.indexed_vertices_list = shape.shader_program.vertex_list(
             count,
@@ -114,15 +124,14 @@ class RenderWindow(pyglet.window.Window):
             vertices=('f', mesh.vertices),
             normals=('f', mesh.normals),
             tex_coords=('f', mesh.tex_coords),
-            colors=('f', red * count),
-        ) if textured == TEXTURED else shape.shader_program.vertex_list(
+        ) if shader == PHONG_TEX else shape.shader_program.vertex_list(
             count,
             GL_TRIANGLES,
             batch=self.batch,
             group=shape,
             vertices=('f', mesh.vertices),
             normals=('f', mesh.normals),
-            colors=('f', red * count),
+            colors=('f', wht * count),
         )
 
         self.shapes.append(shape)
@@ -141,7 +150,6 @@ class RenderWindow(pyglet.window.Window):
             self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)
 
     def run(self):
-        pyglet.gl.glClearColor(1, 1, 1, 1)
+        #pyglet.gl.glClearColor(1, 1, 1, 1)
         pyglet.clock.schedule_interval(self.update, 1 / 60)
         pyglet.app.run()
-
