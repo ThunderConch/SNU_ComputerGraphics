@@ -115,7 +115,7 @@ class RenderWindow(pyglet.window.Window):
                                                                                colors=('f', color))
         self.shapes2.append(shape)
 
-    def add_shape_from_obj(self, file_name, shader=TEX):
+    def add_shape_from_obj(self, file_name, shader=TEX, wireframe=True):
         mesh = parse_obj_file(file_name)
         shape = CustomGroup(Mat4(), len(self.shapes), shader)
         count = len(mesh.vertices) // 3
@@ -216,17 +216,18 @@ class RenderWindow(pyglet.window.Window):
 
         self.shapes.append(shape)
 
-        for i in range(len(mesh.vertices) // 3):
-            a = Vec3(*mesh.vertices[i*3:i*3+3])
-            b = Vec3(*mesh.vertices[i*3+3:i*3+6])
-            c = Vec3(*mesh.vertices[i*3+6:i*3+9])
+        if wireframe:
+            for i in range(len(mesh.vertices) // 3):
+                a = Vec3(*mesh.vertices[i*3:i*3+3])
+                b = Vec3(*mesh.vertices[i*3+3:i*3+6])
+                c = Vec3(*mesh.vertices[i*3+6:i*3+9])
 
-            l1 = Line(a, b)
-            l2 = Line(b, c)
-            l3 = Line(c, a)
-            self.add_shape(Mat4(), l1.vertices, l1.indices, l1.colors)
-            self.add_shape(Mat4(), l2.vertices, l2.indices, l2.colors)
-            self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)
+                l1 = Line(a, b)
+                l2 = Line(b, c)
+                l3 = Line(c, a)
+                self.add_shape(Mat4(), l1.vertices, l1.indices, l1.colors)
+                self.add_shape(Mat4(), l2.vertices, l2.indices, l2.colors)
+                self.add_shape(Mat4(), l3.vertices, l3.indices, l3.colors)
 
     def run(self):
         #pyglet.gl.glClearColor(1, 1, 1, 1)
