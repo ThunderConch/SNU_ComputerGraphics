@@ -87,7 +87,7 @@ void main()
     vec3 diffuse = diffuse_strength * light_intensity * d2_inv * vertex_colors.rgb * max(dot(n, l), 0.0);
     
     float specular_strength = 0.8;
-    vec3 specular = specular_strength * light_intensity * d2_inv * vertex_colors.rgb * pow(dot(r, v), 4.0);
+    vec3 specular = specular_strength * light_intensity * d2_inv * vertex_colors.rgb * pow(max(dot(r, v), 0.0), 4.0);
 
     final_colors = vec4(ambient + diffuse + specular, 1.0);
 }
@@ -132,7 +132,7 @@ void main()
     vec3 diffuse = diffuse_strength * light_intensity * d2_inv * colors.rgb * max(dot(n, l), 0.0);
     
     float specular_strength = 0.8;
-    vec3 specular = specular_strength * light_intensity * d2_inv * colors.rgb * pow(dot(r, v), 4.0);
+    vec3 specular = specular_strength * light_intensity * d2_inv * colors.rgb * pow(max(dot(r, v), 0.0), 4.0);
     
     vertex_colors = vec4(ambient + diffuse + specular, 1.0);
 }   
@@ -206,7 +206,7 @@ void main()
 
     vec3 roughness = texture(roughness_map, texture_coords).xyz;
     vec3 shininess = 1.0 / (1*roughness + .0);
-    vec3 specular = light_intensity * d2_inv * texture(specular_map, texture_coords).xyz * pow(vec3(dot(r, v)), shininess);
+    vec3 specular = light_intensity * d2_inv * texture(specular_map, texture_coords).xyz * pow(vec3(max(dot(r, v), 0.0)), shininess);
 
     final_colors = vec4(ambient + diffuse + specular, 1.0);
 }
@@ -286,7 +286,7 @@ void main()
 
     vec3 roughness = texture(roughness_map, texture_coords).xyz;
     vec3 shininess = 1.0 / (1*roughness + .0);
-    vec3 specular = light_intensity * d2_inv * texture(specular_map, texture_coords).xyz * pow(vec3(dot(r, v)), shininess);
+    vec3 specular = light_intensity * d2_inv * texture(specular_map, texture_coords).xyz * pow(vec3(max(dot(r, v), 0.0)), shininess);
 
     final_colors = vec4(ambient + diffuse + specular, 1.0);
 }

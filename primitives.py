@@ -8,8 +8,8 @@ import shader
 
 DEFAULT = 0
 PHONG = 1
-GOURAUD = 3
-TEX = 2
+GOURAUD = 2
+TEX = 3
 NORMAL = 4
 
 

@@ -3,6 +3,8 @@ from pyglet import window, app, shapes
 from pyglet.window import mouse, key
 from pyglet.math import Mat4, Vec3
 
+from primitives import PHONG, GOURAUD, TEX, NORMAL
+
 
 class Control:
     """
@@ -36,9 +38,9 @@ class Control:
         elif symbol == pyglet.window.key.DOWN:
             self.window.rotate_x = 1
         elif symbol == pyglet.window.key.W:
-            self.window.light_rotate_x = 1
-        elif symbol == pyglet.window.key.S:
             self.window.light_rotate_x = -1
+        elif symbol == pyglet.window.key.S:
+            self.window.light_rotate_x = 1
         elif symbol == pyglet.window.key.A:
             self.window.light_rotate_y = -1
         elif symbol == pyglet.window.key.D:
@@ -57,6 +59,14 @@ class Control:
             self.window.light_rotate_x = 0
         elif symbol == pyglet.window.key.A or symbol == pyglet.window.key.D:
             self.window.light_rotate_y = 0
+        elif symbol == pyglet.window.key.P:
+            self.window.mode = PHONG
+        elif symbol == pyglet.window.key.G:
+            self.window.mode = GOURAUD
+        elif symbol == pyglet.window.key.T:
+            self.window.mode = TEX
+        elif symbol == pyglet.window.key.N:
+            self.window.mode = NORMAL
 
     def on_mouse_motion(self, x, y, dx, dy):
         # TODO:
