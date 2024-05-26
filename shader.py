@@ -200,7 +200,7 @@ void main()
     vec3 n = normalize(vertex_normals);
     vec3 r = normalize(reflect(-l, n));
 
-    vec3 ambient = texture(ambient_map, texture_coords).xyz * ambient_intensity;
+    vec3 ambient = texture(ambient_map, texture_coords).xyz * texture(diffuse_map, texture_coords).xyz * ambient_intensity;
 
     vec3 diffuse = texture(diffuse_map, texture_coords).xyz * light_intensity * d2_inv * max(dot(n, l), 0.0);
 
@@ -280,7 +280,7 @@ void main()
     
     vec3 r = normalize(reflect(-l, normal));
 
-    vec3 ambient = texture(ambient_map, texture_coords).xyz * ambient_intensity;
+    vec3 ambient = texture(ambient_map, texture_coords).xyz * texture(diffuse_map, texture_coords).xyz * ambient_intensity;
 
     vec3 diffuse = texture(diffuse_map, texture_coords).xyz * light_intensity * d2_inv * max(dot(normal, l), 0.0);
 
